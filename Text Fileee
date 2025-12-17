@@ -1,0 +1,244 @@
+public IActionResult Create()
+{
+    var vm = new CategorySubCategoryVM
+    {
+        Categories = db.Categories.ToList(),
+        SubCategories = new List<SubCategory>()
+    };
+
+    return View(vm);
+}
+// POST
+[HttpPost]
+public IActionResult Create(CategorySubCategoryVM vm, string actionType)
+{
+    vm.Categories = db.Categories.ToList();
+
+    // Load subcategories
+    if (actionType == "load")
+    {
+        vm.SubCategories = db.SubCategories
+            .Where(sc => sc.CategoryId == vm.CategoryId)
+            .ToList();
+
+        return View(vm);
+    }
+
+    // Save product
+    var product = new Product
+    {
+        ProductName = vm.ProductName,
+        Price = vm.Price,
+        SubCategoryId = vm.SubCategoryId
+    };
+
+    db.Products.Add(product);
+    db.SaveChanges();
+
+    return RedirectToAction("Index");
+}
+// GET: Edit
+public IActionResult Edit(int id)
+{
+    var product = db.Products
+        .Include(p => p.SubCategory)
+        .FirstOrDefault(p => p.ProductId == id);
+
+    if (product == null)
+        return NotFound();
+
+    var vm = new CategorySubCategoryVM
+    {
+        ProductName = product.ProductName,
+        Price = product.Price,
+
+        SubCategoryId = product.SubCategoryId,
+        CategoryId = product.SubCategory.CategoryId, // derived
+
+        Categories = db.Categories.ToList(),
+        SubCategories = db.SubCategories
+            .Where(sc => sc.CategoryId == product.SubCategory.CategoryId)
+            .ToList()
+    };
+
+    return View(vm);
+}
+[HttpPost]
+public IActionResult Edit(int id, CategorySubCategoryVM vm, string actionType)
+{
+    vm.Categories = db.Categories.ToList();
+
+    // 🔹 Reload subcategories if category changed
+    if (actionType == "load")
+    {
+        vm.SubCategories = db.SubCategories
+            .Where(sc => sc.CategoryId == vm.CategoryId)
+            .ToList();
+
+        return View(vm);
+    }
+
+    // 🔹 Save updated product
+    var product = db.Products.Find(id);
+    if (product == null)
+        return NotFound();
+
+    product.ProductName = vm.ProductName;
+    product.Price = vm.Price;
+    product.SubCategoryId = vm.SubCategoryId;
+
+    db.SaveChanges();
+
+    return RedirectToAction("Index");
+}
+       
+public IActionResult Delete(int id)
+{
+   
+    var product = db.Products.Find(id);
+    if (product == null)
+        return NotFound();
+
+    db.Products.Remove(product);
+
+    db.SaveChanges();
+
+    return RedirectToAction("Index");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@model Office_Project.Models.CategorySubCategoryVM
+
+<form method="post">
+
+    <label>Product Name</label><br />
+    <input asp-for="ProductName" />
+    <br /><br />
+
+    <label>Price</label><br />
+    <input asp-for="Price" />
+
+    <br /><br />
+
+    <label>Category</label><br />
+    <select asp-for="CategoryId"
+            asp-items="@(new SelectList(Model.Categories,"CategoryId","CategoryName"))">
+        <option value="">-- Select Category --</option>
+    </select>
+
+    <br /><br />
+
+    <button type="submit" name="actionType" value="load">
+        Load SubCategories
+    </button>
+
+    <br /><br />
+
+    <label>Sub Category</label><br />
+    <select asp-for="SubCategoryId"
+            asp-items="@(new SelectList(Model.SubCategories,"SubCategoryId","SubCategoryName"))">
+        <option value="">-- Select Sub Category --</option>
+    </select>
+
+    <br /><br />
+
+    <button type="submit" name="actionType" value="save">
+        Save Product
+    </button>
+
+</form>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@model Office_Project.Models.CategorySubCategoryVM
+
+<form method="post">
+
+    <label>Product Name</label><br />
+    <input asp-for="ProductName" />
+    <br /><br />
+
+    <label>Price</label><br />
+    <input asp-for="Price" />
+    <br /><br />
+
+    <!-- CATEGORY -->
+    <label>Category</label><br />
+    <select asp-for="CategoryId"
+            asp-items="@(new SelectList(Model.Categories,"CategoryId","CategoryName"))">
+        <option value="">-- Select Category --</option>
+    </select>
+
+    <br /><br />
+
+    <button type="submit" name="actionType" value="load">
+        Load SubCategories
+    </button>
+
+    <br /><br />
+
+    <!-- SUBCATEGORY -->
+    <label>Sub Category</label><br />
+    <select asp-for="SubCategoryId"
+            asp-items="@(new SelectList(Model.SubCategories,"SubCategoryId","SubCategoryName"))">
+        <option value="">-- Select Sub Category --</option>
+    </select>
+
+    <br /><br />
+
+    <button type="submit" name="actionType" value="save">
+        Update Product
+    </button>
+
+</form>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public class CategorySubCategoryVM
+    {
+        public int CategoryId { get; set; }
+        public int SubCategoryId { get; set; }
+        public string ProductName { get; set; }
+        public decimal Price { get; set; }
+        public List<Category> Categories { get; set; }
+        public List<SubCategory> SubCategories { get; set; }
+    }
